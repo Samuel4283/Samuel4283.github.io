@@ -6,6 +6,7 @@
                 <li><router-link to="/"><i class="fa-solid fa-house"></i>首頁</router-link></li>
                 <li><router-link to="/Portfolio">作品集</router-link></li>
                 <li><router-link to="/about">關於我</router-link></li>
+                <li><router-link to="/final-exam">期末考功能模擬</router-link></li>
             </ul>
         </div>
     </transition>
