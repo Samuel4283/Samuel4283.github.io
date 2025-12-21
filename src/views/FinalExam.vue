@@ -1,7 +1,16 @@
 <template>
   <div class="quiz-app">
     <div class="check-bar">
-        <button v-if="currentView != `result`" class="btn btn-ref" @click="currentView = currentView == 'reference'? 'quiz' : 'reference'"> 查看對照表 (ID) </button>
+        <div v-if="currentView === 'quiz'" class="setup-group">
+        <label>考題數量：</label>
+        <select v-model="quizLimit" @change="initQuiz" class="num-select">
+          <option :value="10">10 題</option>
+          <option :value="20">20 題</option>
+          <option :value="50">50 題</option>
+          <option :value="Object.keys(rawData).length">全部 ({{ Object.keys(rawData).length }})</option>
+        </select>
+      </div>
+        <button v-if="currentView != `result`" class="btn btn-ref" @click="currentView = currentView == 'reference'? 'quiz' : 'reference'"> {{ currentView === 'reference' ? '返回題目' : '對照表' }} </button>
         <button v-if="currentView != `result`" class="btn btn-submit" @click="submitQuiz">提交答案</button>
         <button v-if="currentView == `result`" class="btn btn-submit" @click="restart">重新開始</button>
       </div>
@@ -9,12 +18,15 @@
       <div class="quiz-list">
         <div v-for="(q, index) in shuffledQuestions" :key="q.question" class="quiz-item">
           <div class="q-text">{{ index + 1 }}.&nbsp; {{ q.question }}</div>
-          <input 
-            type="number" 
-            v-model.number="userAnswers[q.question]" 
-            placeholder="Ans:"
-            class="id-input"
-          />
+          <div class="input-wrapper">
+    <input 
+      type="number" 
+      v-model.number="userAnswers[q.question]" 
+      placeholder="Ans:"
+      class="id-input"
+    />
+    <button class="btn-pick" @click="goToPick(q.question)">🔍</button>
+  </div>
         </div>
       </div>
 
@@ -24,11 +36,16 @@
     <div v-else-if="currentView === 'reference'" class="container ans">
       <h3>答案對照表</h3>
       <div class="answer-grid">
-        <div v-for="ans in sortedAnswers" :key="ans.id" class="answer-card">
-          <span class="id-badge">Ans: {{ ans.id }}</span>
-          <span class="ans-text">{{ ans.text }}</span>
-        </div>
-      </div>
+  <div 
+    v-for="ans in sortedAnswers" 
+    :key="ans.id" 
+    class="answer-card pickable" 
+    @click="pickAnswer(ans.id)"
+  >
+    <span class="id-badge">Ans: {{ ans.id }}</span>
+    <span class="ans-text">{{ ans.text }}</span>
+  </div>
+</div>
     </div>
 
     <div v-else-if="currentView === 'result'" class="container res">
@@ -53,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 
 // --- 靜態資料集 ---
 const rawData = {
@@ -164,6 +181,8 @@ const currentView = ref('quiz'); // quiz, reference, result
 const userAnswers = ref({});     // 儲存使用者輸入的 ID
 const shuffledQuestions = ref([]);
 const errors = ref([]);
+const quizLimit = ref(100); // 預設 100 題
+const pendingQuestion = ref(null); // 紀錄目前點擊「選取」按鈕的是哪一題題目文字
 
 // --- 邏輯處理 ---
 
@@ -187,7 +206,9 @@ const initQuiz = () => {
     };
   });
   // 隨機排序
-  shuffledQuestions.value = questions.sort(() => Math.random() - 0.5);
+  shuffledQuestions.value = questions
+    .sort(() => Math.random() - 0.5)
+    .slice(0, quizLimit.value);
   // 清空輸入
   userAnswers.value = {};
 };
@@ -215,6 +236,31 @@ const restart = () => {
   currentView.value = 'quiz';
 };
 
+//選取按鈕
+const goToPick = (questionText) => {
+  pendingQuestion.value = questionText; // 紀錄題目
+  currentView.value = 'reference';      // 跳轉到對照表
+};
+
+const pickAnswer = (ansId) => {
+  if (pendingQuestion.value) {
+    // 將 ID 填入對應的題目答案中
+    userAnswers.value[pendingQuestion.value] = ansId;
+    // 重置紀錄並跳回測驗
+    pendingQuestion.value = null;
+    currentView.value = 'quiz';
+  }
+};
+
+watch(currentView, (newView) => {
+  if (newView === 'reference') {
+    // 鎖定背景滾動
+    document.body.style.overflow = 'hidden';
+  } else {
+    // 恢復背景滾動
+    document.body.style.overflow = 'auto';
+  }
+});
 onMounted(initQuiz);
 </script>
 
@@ -240,6 +286,21 @@ onMounted(initQuiz);
   border-radius: 12px;
   margin-bottom: 40px; /* 底部留白 */
 }
+
+.container.ans {
+  width: 96%;
+  max-width: 1600px;
+  /* 讓對照表高度固定在視窗內，超過則內部滾動 */
+  max-height: calc(100vh - 100px); 
+  overflow-y: auto; 
+  margin: 10px auto;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
 .res{
   background-color: #ececec;
 }
@@ -259,6 +320,12 @@ onMounted(initQuiz);
   margin-bottom: 20px;
 }
 
+.setup-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px;
+}
 /* 按鈕 */
 .btn {
   margin: 0 20px 0 20px;
@@ -277,7 +344,11 @@ onMounted(initQuiz);
 .btn-back { background: #f0f0f0; color: #666; margin-bottom: 15px; }
 .btn-submit { background: #2ecc71; color: white; font-size: 1.1em; margin: 20px 10px; }
 .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
 /* 題目列表 */
 .quiz-item {
   justify-content: flex-start;
@@ -295,6 +366,11 @@ onMounted(initQuiz);
   background-color: #f1f1f1;
   color: #000000;
   font-weight: bold;
+}
+.id-input::-webkit-outer-spin-button,
+.id-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .q-text {
   flex: 1;             /* 讓文字佔滿左邊剩餘空間 */
@@ -348,4 +424,34 @@ onMounted(initQuiz);
 .text-red { color: #e74c3c; font-weight: bold; }
 .text-green { color: #27ae60; font-weight: bold; }
 .success-msg { color: #27ae60; text-align: center; font-size: 1.2em; font-weight: bold; }
+
+.btn-pick {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.btn-pick:hover {
+  background: #357abd;
+}
+
+/* 讓對照表卡片有「可點擊」的感覺 */
+.answer-card.pickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.answer-card.pickable:hover {
+  background: #bbbbbb; /* 顏色變深一點點 */
+  border-bottom: 3px solid #2ecc71; /* 滑過時顯示綠色邊框 */
+  transform: scale(1.02);
+}
 </style>
