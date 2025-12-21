@@ -42,6 +42,7 @@ export default {
   display: flex;
   height: 100vh; 
   position: relative;
+  background-color: rgb(0, 0, 0);
 }
 
 .main-content {
@@ -54,7 +55,7 @@ export default {
   position: fixed;
   top: 10px;
   left: 10px;
-  z-index: 9999;
+  z-index: 10001;
   background-color: #fff;
   border :1px solid #ccc;
   cursor: pointer;

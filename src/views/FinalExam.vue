@@ -21,7 +21,7 @@
       
     </div>
 
-    <div v-else-if="currentView === 'reference'" class="container">
+    <div v-else-if="currentView === 'reference'" class="container ans">
       <h3>答案對照表</h3>
       <div class="answer-grid">
         <div v-for="ans in sortedAnswers" :key="ans.id" class="answer-card">
@@ -31,14 +31,20 @@
       </div>
     </div>
 
-    <div v-else-if="currentView === 'result'" class="container">
+    <div v-else-if="currentView === 'result'" class="container res">
       <h2>測驗結果</h2>
       <div v-if="errors.length === 0" class="success-msg">🎉 太厲害了！全對！</div>
       <div v-else class="error-list">
         <div v-for="err in errors" :key="err.q" class="error-item">
           <p><strong>題目：</strong>{{ err.q }}</p>
-          <p>您的填寫：<span class="text-red">{{ err.userVal || '未填' }}</span></p>
-          <p>正確答案：<span class="text-green">{{ err.correctText }} (ID: {{ err.correctId }})</span></p>
+          <p>您的填寫：
+        <span class="text-red">
+          {{ 
+            sortedAnswers.find(a => a.id === err.userVal)?.text || (err.userVal ? '查無此 ID ：' + err.userVal : '未填') 
+          }}
+        </span>
+      </p>
+          <p>正確答案：<span class="text-green">{{ err.correctText }} </span></p>
         </div>
       </div>
       
@@ -215,24 +221,27 @@ onMounted(initQuiz);
 <style scoped>
 .quiz-app {
   font-family: 'PingFang TC', sans-serif;
+  background-color: #ffffff;
   padding: 0;
   display: block;
   flex-direction: column;
   align-items: center;
-  width: 100%;
   width: 90vw; 
-  min-height: 100vh;
+  height: fit-content;
 }
 
 .container {
   width: 95%;
-  background: #565656;
+  background: #dadada;
   padding: 25px;
   border-radius: 12px;
   
   box-shadow: 0 10px 25px rgba(0,0,0,0.05);
   border-radius: 12px;
   margin-bottom: 40px; /* 底部留白 */
+}
+.res{
+  background-color: #ececec;
 }
 
 /* 導覽列*/
@@ -241,11 +250,12 @@ onMounted(initQuiz);
   top: 0;
   z-index: 1000;    /* 確保在所有題目上方 */
   width: 95vw; 
-  background: #232323; /* 固定條的背景色，避免文字重疊 */
+  background: #ffffff; /* 固定條的背景色，避免文字重疊 */
   padding: 0;
   display: flex;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* 增加陰影更有層次感 */
+  box-shadow: 0 4px 0 rgba(0,0,0,0.05);
+
   margin-bottom: 20px;
 }
 
@@ -280,8 +290,11 @@ onMounted(initQuiz);
   width: 60px;
   padding: 8px;
   text-align: center;
-  border: 1px solid #ddd;
+  border: 1px solid #989898;
   border-radius: 4px;
+  background-color: #f1f1f1;
+  color: #000000;
+  font-weight: bold;
 }
 .q-text {
   flex: 1;             /* 讓文字佔滿左邊剩餘空間 */
@@ -297,11 +310,14 @@ onMounted(initQuiz);
   width: 100%;
   gap: 10px;
 }
+.ans{
+  background-color: #9e9e9e;
+}
 .answer-card {
-  color: #232323;
+  color: #131313;
   padding: 8px 12px;
   min-height: 60px;
-  background: #d3d3d3;
+  background: #e0e0e0;
   border-radius: 6px;
   display: flex;
   flex-direction: column;
